@@ -1,0 +1,13 @@
+{
+    "allExperiments": true,
+    "cSpell.words": [
+        "expresso",
+        "mongoboiler",
+        "occured",
+        "wireinject",
+        "zaplogger"
+    ],
+    "gopls": {
+        "build.buildFlags": ["-tags=wireinject"]
+    }
+}
