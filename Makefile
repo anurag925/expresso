@@ -6,8 +6,12 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
-BINARY_NAME=nps
-BINARY_UNIX=$(BINARY_NAME)_unix
+SERVER_BINARY_NAME=expresso
+WORKER_BINARY_NAME=expresso-worker
+
+# Relative address
+SERVER=./cmd/server/main.go
+WORKER=./cmd/worker/main.go
 
 # Migration parameters
 DATABASE_URL=mysql://${DB_USERNAME}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_NAME}
@@ -24,30 +28,30 @@ DB_CONFIG_TO_USE=mysql
 all: debug
 
 build: 
-	$(GOBUILD) -o $(BINARY_NAME) -v
+	$(GOBUILD) -o $(SERVER_BINARY_NAME) -v ${SERVER}
+
+build_worker: 
+	$(GOBUILD) -o $(WORKER_BINARY_NAME) -v ${WORKER}
 
 test: 
 	$(GOTEST) -v ./...
 
 clean: 
 	$(GOCLEAN)
-	rm -f $(BINARY_NAME)
-	rm -f $(BINARY_UNIX)
+	rm -f $(SERVER_BINARY_NAME)
+	rm -f $(WORKER_BINARY_NAME)
 
 run: 
-	./$(BINARY_NAME) -env production
+	./$(SERVER_BINARY_NAME)
 
-deploy: build run
+run_worker:
+	./$(WORKER_BINARY_NAME)
 
-deploy_staging:build
-	./$(BINARY_NAME) -env staging
+server: build run
+worker: build_worker run_worker
 
 debug:
-	$(GOCMD) run .
-
-deps:
-	$(GOGET) github.com/markbates/goth
-	$(GOGET) github.com/markbates/pop
+	$(GOCMD) run ${SERVER}
 
 # Migration
 create_migration:
@@ -79,11 +83,4 @@ migrate_force:
 
 models_update:
 	${SQLBOILER} ${DB_CONFIG_TO_USE} -c ${DB_CONFIG_FILE}
-
-
-# Cross compilation
-build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v
-docker-build:
-	docker run --rm -it -v "$(GOPATH)":/go -w /go/src/bitbucket.org/rsohlich/makepost golang:latest go build -o "$(BINARY_UNIX)" -v
 
